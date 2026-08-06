@@ -2,7 +2,7 @@
 
 > Este README documenta **o processo** de produção do pacote de design docs. O enunciado original do desafio foi preservado em [`docs/DESAFIO.md`](docs/DESAFIO.md).
 >
-> **Status:** em construção — atualizado incrementalmente a cada documento concluído. Concluído até aqui: contextualização + ADRs (etapas 1–3).
+> **Status:** em construção — atualizado incrementalmente a cada documento concluído. Concluído até aqui: contextualização + ADRs + RFC (etapas 1–4).
 
 ## Sobre o desafio
 
@@ -25,7 +25,8 @@ Segui a ordem sugerida no enunciado (ADRs → RFC → FDD → PRD), com um ajust
    - Análise dirigida da transcrição (decisões fechadas com timestamp, alternativas descartadas, requisitos, itens fora de escopo, ganchos com o código).
 3. **ADRs** (7, em [`docs/adrs/`](docs/adrs/)): gerados um a um a partir das decisões catalogadas na análise, em formato MADR, com revisão humana de cada arquivo (ver iterações abaixo).
 4. **Tracker + README** atualizados com o conteúdo da fase.
-5. *(Próximas fases: RFC → FDD → PRD → revisão final contra os critérios de aceite.)*
+5. **RFC** ([`docs/RFC.md`](docs/RFC.md)): proposta consolidada em altura de arquitetura — referencia os ADRs em vez de repetir o detalhe deles; alternativas descartadas e questões em aberto da reunião ganham suas seções naturais. Antes de escrever, releitura dos ADRs já revisados, para o RFC herdar a versão corrigida.
+6. *(Próximas fases: FDD → PRD → revisão final contra os critérios de aceite.)*
 
 Interação com a IA: em vez de "gere os ADRs da transcrição", cada documento foi produzido com prompts dirigidos (abaixo), e cada dúvida de fidelidade foi resolvida voltando à transcrição — quando a IA registrava algo que a reunião não sustentava, o trecho era corrigido ou removido.
 
@@ -69,12 +70,26 @@ under src/, prisma/, tests/ or the root README.md / TRANSCRICAO.md.
 Write the mapping document in Brazilian Portuguese (pt-BR).
 ```
 
+Prompt de double check (revisão de fidelidade) — criado depois que a IA, revisando um documento, "corrigiu" tom e estilo em vez de fatos (ver iteração 3):
+
+```text
+Faça um double check em <documento> contra a transcrição real e o código do
+repo. Aponte SOMENTE erros concretos: decisão registrada errada (ex.:
+"escolheram síncrono" quando escolheram outbox), afirmação tecnicamente
+falsa (ex.: "arranjo de pastas melhora performance do banco"), timestamp ou
+falante trocado, caminho de arquivo inexistente. NÃO sugira ajustes de tom,
+estilo, parafraseio ou pontuação. Se não houver nada nesse nível, a resposta
+é "está tudo certo, nada concreto encontrado".
+```
+
 ## Iterações e ajustes
 
-Registro dos principais momentos em que a saída da IA precisou de correção humana (fase de ADRs):
+Registro dos principais momentos em que a saída da IA precisou de correção humana:
 
 1. **O plugin do curso não servia para gerar estes ADRs.** O plano inicial era usar o fluxo completo `adr-map → adr-identify → adr-generate`. Ao inspecionar o plugin, ficou claro que as fases 2 e 3 extraem decisões da arquitetura **já implementada** no código — e as 6 decisões deste desafio existem apenas na transcrição (a feature ainda não existe). Ajuste de workflow: plugin mantido só no mapeamento; ADRs gerados de forma dirigida a partir da análise da transcrição. Sem esse ajuste, os ADRs sairiam sobre Prisma/JWT/Express em vez de outbox/retry/HMAC.
 2. **Consequências sem lastro no ADR-006 (reuso de padrões).** A IA registrou dois trade-offs que a transcrição não sustentava: (a) "problema de performance no MySQL afeta API e worker juntos" — verdadeiro, mas consequência do outbox no MySQL (ADR-001), não do reuso de padrões: a alternativa descartada no ADR-006 não evitaria isso, então a consequência não era diferencial; (b) "polling sem framework de jobs" implicava que o time decidiu "fazer tudo à mão" — decisão que a reunião nunca tomou (o que existe é o descarte de Redis em [09:07] e o polling em [09:09]). Ambos corrigidos após questionamento, ficando só o que a transcrição sustenta ([09:29]: logging permanece Pino, "nada novo").
+3. **A IA "corrigiu" o que não precisava de correção.** Num double check da análise da transcrição, a IA propôs e aplicou 3 ajustes puramente cosméticos (suavizar "ameaça migrar", ampliar um range de timestamp, pontuação dentro de uma citação) — zero erro concreto. Os 3 foram revertidos e a regra virou prompt fixo de revisão (acima): só fato errado conta; "nada encontrado" é resposta válida. No double check seguinte (TRACKER.md, 45 linhas), a regra funcionou: verificação de timestamps, falantes, caminhos e contagens, zero achado inventado.
+4. **Fronteira "questão em aberto" × "adiado" no RFC.** Questionei a separação entre as 4 questões em aberto e os 2 itens de rodapé (email, dashboard) — por que só os últimos seriam "explicitamente adiados"? A revisão explicitou o critério: pergunta que ficou **sem resposta** na reunião é questão em aberto (ex.: rate limiting, que o próprio Diego pede para "registrar como ponto em aberto" em [09:39]); pedido que recebeu **"não" explícito** da tech lead é decisão de escopo fechada ([09:37] email, [09:40] dashboard) e pertence ao "Fora de escopo" do PRD. O RFC foi levemente editado após essa discussão.
 
 ## Como navegar a entrega
 
@@ -82,7 +97,8 @@ Ordem de leitura sugerida (estado atual):
 
 1. [`docs/DESAFIO.md`](docs/DESAFIO.md) — enunciado original do desafio.
 2. [`docs/analise-transcricao.md`](docs/analise-transcricao.md) — documento de trabalho: o que a reunião decidiu, descartou e deixou em aberto (com timestamps).
-3. [`docs/adrs/README.md`](docs/adrs/README.md) — índice dos ADRs, e os 7 ADRs (`ADR-001` a `ADR-007`).
-4. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
+3. [`docs/RFC.md`](docs/RFC.md) — a proposta técnica: o que estamos propondo, o que foi descartado e o que segue em aberto.
+4. [`docs/adrs/README.md`](docs/adrs/README.md) — índice dos ADRs, e os 7 ADRs (`ADR-001` a `ADR-007`).
+5. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
 
-Pendentes (próximas fases): `docs/RFC.md`, `docs/FDD.md`, `docs/PRD.md`.
+Pendentes (próximas fases): `docs/FDD.md`, `docs/PRD.md`.
