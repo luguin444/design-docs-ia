@@ -26,7 +26,8 @@ O endpoint do cliente pode estar indisponível no momento da entrega do webhook.
 - Traz o problema de evento pendurado para sempre se o cliente sumiu. Cinco tentativas cobrem uma janela satisfatória de 12–24h.
 
 ### 3. Marcar como "failed" na própria outbox, sem tabela DLQ separada — descartada
-- A tabela separada deixa a leitura da outbox principal mais limpa e serve de evidência para debug e reprocessamento.
+- A tabela separada deixa a leitura da outbox principal mais limpa ( menos registros para uma tabela que tende a crescer e menos colunas, pois não precisa registrar motivos de falhas nessa tabela )
+- Serve de evidência para debug e reprocessamento.
 
 ## Consequências
 
@@ -36,7 +37,8 @@ O endpoint do cliente pode estar indisponível no momento da entrega do webhook.
 - Replay manual controlado e auditado (role `ADMIN` + log de quem executou).
 
 ### Negativas / trade-offs
-- Evento pode levar até ~15h para ser desistido — durante esse período consome tentativas e monitoramento; não há notificação proativa ao cliente sobre falhas (email ficou para fase futura, [09:37] Larissa).
+- Evento pode levar até ~15h para ser desistido — durante esse período consome tentativas e monitoramento; 
+- Não há notificação proativa ao cliente sobre falhas (email ficou para fase futura, [09:37] Larissa).
 - Reprocessamento exige ação humana; DLQ pode acumular se ninguém observar (rate limiting/alertas ficaram como ponto em aberto, [09:38]–[09:39]).
 - Mais uma tabela e mais estados para gerenciar no worker (pendente, processando, falhou, entregue + dead letter).
 
