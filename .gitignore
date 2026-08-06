@@ -9,5 +9,4 @@ coverage/
 .idea/
 .vscode/
 *.tsbuildinfo
-docs/analise-transcricao.md
 docs/mapping.md
