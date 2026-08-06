@@ -40,7 +40,7 @@ Com o outbox no MySQL decidido ([ADR-001](ADR-001-padrao-outbox-no-mysql.md)), �
 
 ### Negativas / trade-offs
 - Latência mínima de ~2s no pior caso — não é push instantâneo. 
-- Polling gera consultas constantes ao MySQL mesmo sem eventos pendentes (mitigado por índices em status e `created_at`.
+- Polling gera consultas constantes ao MySQL mesmo sem eventos pendentes (mitigado por índices em status e `created_at`).
 - Single-worker é ponto único de processamento: throughput limitado e necessidade de decisão futura (particionamento/lock) para escalar sem quebrar ordering.
 - Um processo a mais para operar, monitorar e manter vivo (deploy, restart, observabilidade).
 
