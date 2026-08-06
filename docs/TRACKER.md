@@ -2,7 +2,7 @@
 
 Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO` (timestamp + falante) ou `CODIGO` (caminho de arquivo real).
 
-> **Status:** em construção — cobre a fase concluída (ADRs). Linhas de RFC, FDD e PRD serão adicionadas conforme cada documento for produzido.
+> **Status:** em construção — cobre as fases concluídas (ADRs e RFC). Linhas de FDD e PRD serão adicionadas conforme cada documento for produzido.
 
 ## Convenções de ID
 
@@ -10,6 +10,11 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 - `ADR-NNN-ALT-XX` — alternativa considerada/descartada registrada no ADR
 - `ADR-NNN-DET-XX` — detalhe, restrição ou requisito registrado no ADR
 - `ADR-NNN-COD-XX` — referência/integração com o código existente registrada no ADR
+- `RFC-PROP-XX` — proposta técnica do RFC
+- `RFC-ALT-XX` — alternativa considerada/descartada no RFC
+- `RFC-QA-XX` — questão em aberto registrada no RFC
+- `RFC-IMP-XX` — impacto/risco/restrição registrado no RFC
+- `RFC-COD-XX` — referência ao código existente registrada no RFC
 
 ## Tabela
 
@@ -60,9 +65,20 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 | ADR-007-ALT-01 | docs/adrs/ADR-007-snapshot-do-payload-na-insercao.md | Alternativa descartada | Guardar só order_id e renderizar no envio (evento refletiria estado alterado do pedido) | TRANSCRICAO | [09:51] Bruno |
 | ADR-007-DET-01 | docs/adrs/ADR-007-snapshot-do-payload-na-insercao.md | Detalhe técnico | Payload enxuto: event_id, event_type, timestamp ISO 8601, order_id, order_number, from/to_status, customer_id, total_cents — sem items | TRANSCRICAO | [09:43] Diego |
 | ADR-007-COD-01 | docs/adrs/ADR-007-snapshot-do-payload-na-insercao.md | Integração com código | Snapshot gerado dentro da transação de `changeStatus`, capturando estado consistente | CODIGO | src/modules/orders/order.service.ts |
+| RFC-PROP-01 | docs/RFC.md | Proposta técnica | Proposta consolidada: outbox + worker polling 2s + retry/DLQ + HMAC + at-least-once + reuso de padrões (resumo confirmado por todos) | TRANSCRICAO | [09:48] Larissa |
+| RFC-ALT-01 | docs/RFC.md | Alternativa descartada | Disparo síncrono no service de orders (travaria a transação; rollback impossível) | TRANSCRICAO | [09:04] Bruno |
+| RFC-ALT-02 | docs/RFC.md | Alternativa descartada | Fila externa Redis Streams (infra nova; overengineering para time pequeno) | TRANSCRICAO | [09:07] Diego |
+| RFC-ALT-03 | docs/RFC.md | Alternativa descartada | Trigger no banco para acionar o worker (MySQL não notifica processo externo) | TRANSCRICAO | [09:09] Diego |
+| RFC-QA-01 | docs/RFC.md | Questão em aberto | Rate limiting de envio: observar em produção e decidir depois | TRANSCRICAO | [09:39] Larissa |
+| RFC-QA-02 | docs/RFC.md | Questão em aberto | Escala para múltiplos workers mantendo ordering (particionamento ou lock) — "problema do futuro" | TRANSCRICAO | [09:13] Diego |
+| RFC-QA-03 | docs/RFC.md | Questão em aberto | Arquivamento de linhas entregues da outbox (~30 dias) fora do escopo desta feature | TRANSCRICAO | [09:08] Diego |
+| RFC-QA-04 | docs/RFC.md | Questão em aberto | Endurecimento futuro das permissões do CRUD de webhooks (hoje qualquer role autenticada) | TRANSCRICAO | [09:37] Sofia |
+| RFC-IMP-01 | docs/RFC.md | Impacto | Única alteração em código existente: `changeStatus` chama `publishWebhookEvent(tx, order, fromStatus, toStatus)` na transação | TRANSCRICAO | [09:41] Bruno |
+| RFC-IMP-02 | docs/RFC.md | Restrição (prazo) | Estimativa de 3 sprints incluindo revisão de segurança (2 dias úteis reservados) | TRANSCRICAO | [09:46] Larissa |
+| RFC-COD-01 | docs/RFC.md | Integração com código | Transação de `changeStatus` como ponto de publicação do evento | CODIGO | src/modules/orders/order.service.ts |
 
 ## Cobertura atual
 
-- **45 linhas** cobrindo os 7 ADRs (decisões, alternativas, detalhes e referências de código)
-- Fonte `TRANSCRICAO`: 35 linhas (~78%) — todas com timestamp no formato `[hh:mm] Nome`
-- Fonte `CODIGO`: 10 linhas — todas com caminho de arquivo existente no repositório
+- **56 linhas** cobrindo os 7 ADRs e o RFC (decisões, alternativas, questões em aberto, impactos e referências de código)
+- Fonte `TRANSCRICAO`: 45 linhas (~80%) — todas com timestamp no formato `[hh:mm] Nome`
+- Fonte `CODIGO`: 11 linhas — todas com caminho de arquivo existente no repositório
