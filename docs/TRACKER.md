@@ -2,7 +2,7 @@
 
 Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO` (timestamp + falante) ou `CODIGO` (caminho de arquivo real).
 
-> **Status:** em construção — cobre as fases concluídas (ADRs e RFC). Linhas de FDD e PRD serão adicionadas conforme cada documento for produzido.
+> **Status:** em construção — cobre as fases concluídas (ADRs, RFC e FDD). Linhas de PRD serão adicionadas quando o documento for produzido.
 
 ## Convenções de ID
 
@@ -15,6 +15,11 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 - `RFC-QA-XX` — questão em aberto registrada no RFC
 - `RFC-IMP-XX` — impacto/risco/restrição registrado no RFC
 - `RFC-COD-XX` — referência ao código existente registrada no RFC
+- `FDD-FLUXO-XX` — fluxo detalhado do FDD
+- `FDD-CONTRATO-XX` — contrato público (endpoint/headers/payload) do FDD
+- `FDD-ERRO-XX` — erro da matriz `WEBHOOK_*`
+- `FDD-RES-XX` / `FDD-RNF-XX` — resiliência / requisito não funcional no FDD
+- `FDD-INT-XX` — integração com o sistema existente (seção 11 do FDD)
 
 ## Tabela
 
@@ -76,9 +81,38 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 | RFC-IMP-01 | docs/RFC.md | Impacto | Única alteração em código existente: `changeStatus` chama `publishWebhookEvent(tx, order, fromStatus, toStatus)` na transação | TRANSCRICAO | [09:41] Bruno |
 | RFC-IMP-02 | docs/RFC.md | Restrição (prazo) | Estimativa de 3 sprints incluindo revisão de segurança (2 dias úteis reservados) | TRANSCRICAO | [09:46] Larissa |
 | RFC-COD-01 | docs/RFC.md | Integração com código | Transação de `changeStatus` como ponto de publicação do evento | CODIGO | src/modules/orders/order.service.ts |
+| FDD-FLUXO-01 | docs/FDD.md | Fluxo | Inserção na outbox dentro da transação de `changeStatus` via `publishWebhookEvent(tx, order, fromStatus, toStatus)` | TRANSCRICAO | [09:41] Bruno |
+| FDD-FLUXO-02 | docs/FDD.md | Fluxo | Filtro de status aplicado na inserção: sem assinante, nada é inserido | TRANSCRICAO | [09:34] Bruno |
+| FDD-FLUXO-03 | docs/FDD.md | Fluxo | Worker em polling de 2s, batch pequeno, pendentes mais antigos primeiro | TRANSCRICAO | [09:09] Diego |
+| FDD-FLUXO-04 | docs/FDD.md | Fluxo | Retry com backoff 1m/5m/30m/2h/12h, 5 tentativas, ~15h de janela total | TRANSCRICAO | [09:17] Diego |
+| FDD-FLUXO-05 | docs/FDD.md | Fluxo | Falha permanente → `webhook_dead_letter` (payload, motivo, timestamp); replay recoloca como pendente | TRANSCRICAO | [09:18] Diego |
+| FDD-FLUXO-06 | docs/FDD.md | Fluxo | Rotação de secret com grace period de 24h; depois a antiga morre | TRANSCRICAO | [09:21] Sofia |
+| FDD-CONTRATO-01 | docs/FDD.md | Contrato | `POST /webhooks`: url + lista de status; secret gerada pela plataforma e devolvida na criação | TRANSCRICAO | [09:31] Marcos |
+| FDD-CONTRATO-02 | docs/FDD.md | Contrato | `PATCH` editar, `DELETE` remover, `GET` listar webhooks de um customer | TRANSCRICAO | [09:33] Bruno |
+| FDD-CONTRATO-03 | docs/FDD.md | Contrato | `GET /webhooks/:id/deliveries`: últimos 100 envios com sucesso/falha, payload, response, tempo | TRANSCRICAO | [09:34] Marcos |
+| FDD-CONTRATO-04 | docs/FDD.md | Contrato | `POST /admin/webhooks/dead-letter/:id/replay` | TRANSCRICAO | [09:35] Diego |
+| FDD-CONTRATO-05 | docs/FDD.md | Contrato | Headers de entrega: `X-Event-Id`, `X-Signature`, `X-Timestamp`, `X-Webhook-Id`, `Content-Type` | TRANSCRICAO | [09:44] Diego |
+| FDD-CONTRATO-06 | docs/FDD.md | Contrato | Payload JSON enxuto (event_id, event_type, timestamp, order_id, order_number, from/to_status, customer_id, total_cents), sem items | TRANSCRICAO | [09:43] Diego |
+| FDD-CONTRATO-07 | docs/FDD.md | Restrição | `customer_id` no body/path; JWT é do usuário operador, não do cliente | TRANSCRICAO | [09:32] Larissa |
+| FDD-ERRO-01 | docs/FDD.md | Erro | Códigos com prefixo `WEBHOOK_` (ex.: WEBHOOK_NOT_FOUND, WEBHOOK_INVALID_URL, WEBHOOK_SECRET_REQUIRED) | TRANSCRICAO | [09:28] Bruno |
+| FDD-ERRO-02 | docs/FDD.md | Erro / RNF | Payload > 64KB: erro, não trunca nem envia | TRANSCRICAO | [09:24] Larissa |
+| FDD-RES-01 | docs/FDD.md | Resiliência | Timeout de 10s por entrega; sem resposta = falha e retry | TRANSCRICAO | [09:42] Diego |
+| FDD-RNF-01 | docs/FDD.md | RNF | URL de webhook obrigatoriamente HTTPS, recusada na validação Zod | TRANSCRICAO | [09:23] Sofia |
+| FDD-RNF-02 | docs/FDD.md | RNF | Replay exige role ADMIN e log de auditoria de quem executou | TRANSCRICAO | [09:36] Sofia |
+| FDD-RNF-03 | docs/FDD.md | RNF | At-least-once com dedup pelo cliente via `X-Event-Id` (UUID gerado na entrada da outbox) | TRANSCRICAO | [09:25] Diego |
+| FDD-INT-01 | docs/FDD.md | Integração com código | `changeStatus` estendido com `publishWebhookEvent(tx, ...)` dentro da transação existente | CODIGO | src/modules/orders/order.service.ts |
+| FDD-INT-02 | docs/FDD.md | Integração com código | Enum `OrderStatus`/máquina de estados como fonte dos valores válidos do filtro `events` | CODIGO | src/modules/orders/order.status.ts |
+| FDD-INT-03 | docs/FDD.md | Integração com código | Novas classes de erro `WEBHOOK_*` no molde das existentes, herdando de `AppError` | CODIGO | src/shared/errors/http-errors.ts |
+| FDD-INT-04 | docs/FDD.md | Integração com código | Error middleware central captura os novos erros sem mudança | CODIGO | src/middlewares/error.middleware.ts |
+| FDD-INT-05 | docs/FDD.md | Integração com código | `authenticate` no router do módulo; `requireRole('ADMIN')` no replay | CODIGO | src/middlewares/auth.middleware.ts |
+| FDD-INT-06 | docs/FDD.md | Integração com código | Worker reutiliza `createLogger()`; `*.secret` adicionado ao redact | CODIGO | src/shared/logger/index.ts |
+| FDD-INT-07 | docs/FDD.md | Integração com código | `src/worker.ts` replica bootstrap e graceful shutdown da entry existente | CODIGO | src/server.ts |
+| FDD-INT-08 | docs/FDD.md | Integração com código | Registro do módulo em `buildApiRouter`/`buildControllers` sob `/api/v1` | CODIGO | src/routes/index.ts |
+| FDD-INT-09 | docs/FDD.md | Integração com código | 4 modelos + 1 enum novos seguindo padrões do schema (UUID Char(36), @@map, índices) | CODIGO | prisma/schema.prisma |
+| FDD-INT-10 | docs/FDD.md | Integração com código | Schemas Zod do módulo aplicados via `validate()` (inclui recusa de URL http) | CODIGO | src/middlewares/validate.middleware.ts |
 
 ## Cobertura atual
 
-- **56 linhas** cobrindo os 7 ADRs e o RFC (decisões, alternativas, questões em aberto, impactos e referências de código)
-- Fonte `TRANSCRICAO`: 45 linhas (~80%) — todas com timestamp no formato `[hh:mm] Nome`
-- Fonte `CODIGO`: 11 linhas — todas com caminho de arquivo existente no repositório
+- **85 linhas** cobrindo os 7 ADRs, o RFC e o FDD (decisões, alternativas, fluxos, contratos, erros e referências de código)
+- Fonte `TRANSCRICAO`: 64 linhas (~75%) — todas com timestamp no formato `[hh:mm] Nome`
+- Fonte `CODIGO`: 21 linhas — todas com caminho de arquivo existente no repositório

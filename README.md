@@ -2,7 +2,7 @@
 
 > Este README documenta **o processo** de produção do pacote de design docs. O enunciado original do desafio foi preservado em [`docs/DESAFIO.md`](docs/DESAFIO.md).
 >
-> **Status:** em construção — atualizado incrementalmente a cada documento concluído. Concluído até aqui: contextualização + ADRs + RFC (etapas 1–4).
+> **Status:** em construção — atualizado incrementalmente a cada documento concluído. Concluído até aqui: contextualização + ADRs + RFC + FDD (etapas 1–5).
 
 ## Sobre o desafio
 
@@ -26,7 +26,8 @@ Segui a ordem sugerida no enunciado (ADRs → RFC → FDD → PRD), com um ajust
 3. **ADRs** (7, em [`docs/adrs/`](docs/adrs/)): gerados um a um a partir das decisões catalogadas na análise, em formato MADR, com revisão humana de cada arquivo (ver iterações abaixo).
 4. **Tracker + README** atualizados com o conteúdo da fase.
 5. **RFC** ([`docs/RFC.md`](docs/RFC.md)): proposta consolidada em altura de arquitetura — referencia os ADRs em vez de repetir o detalhe deles; alternativas descartadas e questões em aberto da reunião ganham suas seções naturais. Antes de escrever, releitura dos ADRs já revisados, para o RFC herdar a versão corrigida.
-6. *(Próximas fases: FDD → PRD → revisão final contra os critérios de aceite.)*
+6. **FDD** ([`docs/FDD.md`](docs/FDD.md)): o "como construir" — modelo de dados, fluxos (outbox → worker → retry → DLQ), 7 endpoints com payloads, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção de integração com 10 arquivos reais do código. Convenção adotada: o que a reunião não definiu está marcado como *(definido neste FDD)* — separando decisão da reunião de proposta de design, para a revisão humana saber onde olhar.
+7. *(Próximas fases: PRD → revisão final contra os critérios de aceite.)*
 
 Interação com a IA: em vez de "gere os ADRs da transcrição", cada documento foi produzido com prompts dirigidos (abaixo), e cada dúvida de fidelidade foi resolvida voltando à transcrição — quando a IA registrava algo que a reunião não sustentava, o trecho era corrigido ou removido.
 
@@ -99,6 +100,7 @@ Ordem de leitura sugerida (estado atual):
 2. [`docs/analise-transcricao.md`](docs/analise-transcricao.md) — documento de trabalho: o que a reunião decidiu, descartou e deixou em aberto (com timestamps).
 3. [`docs/RFC.md`](docs/RFC.md) — a proposta técnica: o que estamos propondo, o que foi descartado e o que segue em aberto.
 4. [`docs/adrs/README.md`](docs/adrs/README.md) — índice dos ADRs, e os 7 ADRs (`ADR-001` a `ADR-007`).
-5. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
+5. [`docs/FDD.md`](docs/FDD.md) — como construir, em detalhe acionável (fluxos, contratos, erros, integração com o código).
+6. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
 
-Pendentes (próximas fases): `docs/FDD.md`, `docs/PRD.md`.
+Pendente (próxima fase): `docs/PRD.md`.
