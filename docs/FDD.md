@@ -30,7 +30,7 @@ Clientes B2B precisam ser notificados dessas mudanças com latência < 10s ([09:
 
 ## 4. Modelo de dados
 
-Quatro modelos novos em [`prisma/schema.prisma`](../prisma/schema.prisma), seguindo os padrões existentes (PK UUID `@db.Char(36)`, `@@map` snake_case, índices explícitos — ver seção 11). Esboço *(nomes de colunas definidos neste FDD; estrutura decidida na reunião)*:
+Cinco modelos novos em [`prisma/schema.prisma`](../prisma/schema.prisma), seguindo os padrões existentes (PK UUID `@db.Char(36)`, `@@map` snake_case, índices explícitos — ver seção 11). Esboço *(nomes de colunas definidos neste FDD; estrutura decidida na reunião)*:
 
 ```prisma
 enum WebhookOutboxStatus {
@@ -234,6 +234,8 @@ Erros: `400 WEBHOOK_INVALID_URL` (url `http://`), `400 VALIDATION_ERROR` (Zod), 
 
 ### 6.2 `GET /api/v1/webhooks?customerId=...` — listar webhooks do customer
 
+Request: sem corpo — filtro via query string (`?customerId=<uuid>`, obrigatório).
+
 Response `200 OK` ([09:33]) — lista simples, **sem paginação**:
 ```json
 {
@@ -261,9 +263,11 @@ Response `200 OK`: objeto atualizado (sem secret). Erros: `404 WEBHOOK_NOT_FOUND
 
 ### 6.4 `DELETE /api/v1/webhooks/:id` — remover webhook
 
-Response `204 No Content` ([09:33]). Erros: `404 WEBHOOK_NOT_FOUND`.
+Request: sem corpo — `:id` no path. Response `204 No Content` (sem corpo) ([09:33]). Erros: `404 WEBHOOK_NOT_FOUND`.
 
 ### 6.5 `POST /api/v1/webhooks/:id/rotate-secret` — rotacionar secret
+
+Request: sem corpo — `:id` no path (a nova secret é gerada pela plataforma, nunca informada pelo cliente).
 
 Response `200 OK` ([09:21]):
 ```json
@@ -275,6 +279,8 @@ Response `200 OK` ([09:21]):
 Erros: `404 WEBHOOK_NOT_FOUND`.
 
 ### 6.6 `GET /api/v1/webhooks/:id/deliveries` — histórico de entregas
+
+Request: sem corpo — `:id` no path.
 
 Response `200 OK` — últimos 100 envios ([09:34] Marcos):
 ```json
@@ -296,7 +302,9 @@ Erros: `404 WEBHOOK_NOT_FOUND`.
 
 ### 6.7 `POST /api/v1/admin/webhooks/dead-letter/:id/replay` — replay de DLQ (ADMIN)
 
-Requer `requireRole('ADMIN')` ([09:36] Sofia); execução logada para auditoria. Response `200 OK` ([09:18] — recoloca na outbox como pendente):
+Requer `requireRole('ADMIN')` ([09:36] Sofia); execução logada para auditoria. Request: sem corpo — `:id` (da linha na DLQ) no path.
+
+Response `200 OK` ([09:18] — recoloca na outbox como pendente):
 ```json
 { "replayed": true, "outboxEventId": "e7c1d2b3-a4f5-6e7d-8c9b-0a1b2c3d4e5f" }
 ```

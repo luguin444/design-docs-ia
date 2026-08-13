@@ -111,7 +111,7 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 | FDD-INT-06 | docs/FDD.md | Integração com código | Worker reutiliza `createLogger()`; `*.secret` adicionado ao redact | CODIGO | src/shared/logger/index.ts |
 | FDD-INT-07 | docs/FDD.md | Integração com código | `src/worker.ts` replica bootstrap e graceful shutdown da entry existente | CODIGO | src/server.ts |
 | FDD-INT-08 | docs/FDD.md | Integração com código | Registro do módulo em `buildApiRouter`/`buildControllers` sob `/api/v1` | CODIGO | src/routes/index.ts |
-| FDD-INT-09 | docs/FDD.md | Integração com código | 4 modelos + 1 enum novos seguindo padrões do schema (UUID Char(36), @@map, índices) | CODIGO | prisma/schema.prisma |
+| FDD-INT-09 | docs/FDD.md | Integração com código | 5 modelos + 1 enum novos seguindo padrões do schema (UUID Char(36), @@map, índices) | CODIGO | prisma/schema.prisma |
 | FDD-INT-10 | docs/FDD.md | Integração com código | Schemas Zod do módulo aplicados via `validate()` (inclui recusa de URL http) | CODIGO | src/middlewares/validate.middleware.ts |
 | PRD-CTX-01 | docs/PRD.md | Contexto | Pedido formal de 3 clientes B2B: Atlas Comercial, MaxDistribuição e Nova Cargo | TRANSCRICAO | [09:00] Marcos |
 | PRD-CTX-02 | docs/PRD.md | Problema | Clientes fazem polling no `GET /orders`; integração lenta e cara | TRANSCRICAO | [09:00] Marcos |

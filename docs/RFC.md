@@ -70,7 +70,7 @@ Itens explicitamente rejeitados agora, mas foram abordados e podem ser implement
 
 **Impacto no sistema existente:**
 - `order.service.ts#changeStatus` passa a chamar `publishWebhookEvent(tx, ...)` dentro da transação — única alteração em código existente.
-- Novas tabelas MySQL (configuração de webhooks, `webhook_outbox`, `webhook_dead_letter`, histórico de entregas), todas com UUID, via migration Prisma.
+- Novas tabelas MySQL (configuração de webhooks, secrets, `webhook_outbox`, `webhook_dead_letter`, histórico de entregas), todas com UUID, via migration Prisma.
 - Novo processo de execução (worker) para operar e monitorar — hoje o projeto tem um único processo e o `GET /health` não verifica dependências.
 - Nenhuma dependência ou infraestrutura nova.
 

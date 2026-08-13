@@ -2,7 +2,7 @@
 
 > Este README documenta **o processo** de produção do pacote de design docs. O enunciado original do desafio foi preservado em [`docs/DESAFIO.md`](docs/DESAFIO.md).
 >
-> **Status:** todos os documentos do pacote produzidos (contextualização, ADRs, RFC, FDD e PRD — etapas 1–6). Falta a revisão final contra a checklist de critérios de aceite.
+> **Status:** completo — todos os documentos produzidos e revisão final executada contra a checklist de critérios de aceite (que encontrou e corrigiu 3 inconsistências entre documentos; ver iteração 7).
 
 ## Sobre o desafio
 
@@ -28,7 +28,7 @@ Segui a ordem sugerida no enunciado (ADRs → RFC → FDD → PRD), com um ajust
 5. **RFC** ([`docs/RFC.md`](docs/RFC.md)): proposta consolidada em altura de arquitetura — referencia os ADRs em vez de repetir o detalhe deles; alternativas descartadas e questões em aberto da reunião ganham suas seções naturais. Antes de escrever, releitura dos ADRs já revisados, para o RFC herdar a versão corrigida.
 6. **FDD** ([`docs/FDD.md`](docs/FDD.md)): o "como construir" — modelo de dados, fluxos (outbox → worker → retry → DLQ), 7 endpoints com payloads, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção de integração com 10 arquivos reais do código. Convenção adotada: o que a reunião não definiu está marcado como *(definido neste FDD)* — separando decisão da reunião de proposta de design, para a revisão humana saber onde olhar. Essa convenção guiou a rodada mais produtiva de revisão do processo (iterações 5 e 6 abaixo).
 7. **PRD** ([`docs/PRD.md`](docs/PRD.md)): produzido por último, como consolidação — problema, público, cenários, objetivos com métricas, escopo/fora de escopo, 9 RFs e 9 RNFs, riscos com probabilidade/impacto e estratégia de testes, tudo apontando para RFC/FDD/ADRs em vez de repetir.
-8. *(Próxima fase: revisão final contra os critérios de aceite.)*
+8. **Revisão final**: releitura do enunciado e passagem item a item pela checklist de critérios de aceite, com verificação automatizada (scripts conferindo que todo caminho de código citado existe, que os links relativos resolvem, que `src/`, `prisma/`, `tests/` e `TRANSCRICAO.md` seguem intocados no git, e que as contagens declaradas no tracker batem com a tabela real).
 
 Interação com a IA: em vez de "gere os ADRs da transcrição", cada documento foi produzido com prompts dirigidos (abaixo), e cada dúvida de fidelidade foi resolvida voltando à transcrição — quando a IA registrava algo que a reunião não sustentava, o trecho era corrigido ou removido.
 
@@ -94,6 +94,7 @@ Registro dos principais momentos em que a saída da IA precisou de correção hu
 4. **Fronteira "questão em aberto" × "adiado" no RFC.** Questionei a separação entre as 4 questões em aberto e os 2 itens de rodapé (email, dashboard) — por que só os últimos seriam "explicitamente adiados"? A revisão explicitou o critério: pergunta que ficou **sem resposta** na reunião é questão em aberto (ex.: rate limiting, que o próprio Diego pede para "registrar como ponto em aberto" em [09:39]); pedido que recebeu **"não" explícito** da tech lead é decisão de escopo fechada ([09:37] email, [09:40] dashboard) e pertence ao "Fora de escopo" do PRD. O RFC foi levemente editado após essa discussão.
 5. **Números sem lastro no FDD.** A primeira versão cravava valores que a reunião nunca definiu: batch do worker = 20 e threshold de recuperação de crash = 5 minutos, ambos sem justificativa. Questionados ("por que 20?", "de onde vêm os 5 minutos?"), viraram: batch configurável via env var (`WEBHOOK_WORKER_BATCH_SIZE`, default 20, ancorado no burst de 50 eventos/min citado em [09:38]) e threshold derivado dos números que a reunião *de fato* fixou (`batch × timeout de 10s + margem`), com a regra de acoplamento registrada para quem mudar um sem o outro.
 6. **Contrato inventado e complexidade especulativa no FDD.** Três achados da revisão humana dos contratos: (a) o erro `WEBHOOK_SECRET_REQUIRED` — citado na reunião só como exemplo de nomenclatura [09:28] — tinha ganhado semântica inventada para um estado impossível por construção (todo webhook nasce com secret); saiu do contrato público, com nota de rastreabilidade explicando o destino. (b) A listagem de webhooks tinha paginação especulativa (lista naturalmente pequena; paginar encareceria o contrato do integrador); removida. (c) O diagrama do fluxo transacional modelava a *transação* como participante de um sequence diagram; refeito como flowchart com a transação como fronteira (subgraph).
+7. **A revisão final pegou inconsistência que os double checks unitários não pegariam.** Revisando o pacote inteiro de uma vez: o FDD dizia "quatro modelos novos" mas listava cinco (a tabela de secrets entrou depois, quando a FK de auditoria foi corrigida, e o texto não acompanhou); o erro estava propagado no tracker ("4 modelos") e o RFC listava só 4 tabelas. Três documentos, três números diferentes para a mesma coisa — corrigidos juntos. Lição: cada documento estava internamente plausível; a divergência só aparece lendo o pacote como um todo.
 
 ## Como navegar a entrega
 
