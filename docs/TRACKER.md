@@ -2,7 +2,7 @@
 
 Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO` (timestamp + falante) ou `CODIGO` (caminho de arquivo real).
 
-> **Status:** em construção — cobre as fases concluídas (ADRs, RFC e FDD). Linhas de PRD serão adicionadas quando o documento for produzido.
+> **Status:** cobre os quatro documentos do pacote (ADRs, RFC, FDD e PRD).
 
 ## Convenções de ID
 
@@ -20,6 +20,9 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 - `FDD-ERRO-XX` — erro da matriz `WEBHOOK_*`
 - `FDD-RES-XX` / `FDD-RNF-XX` — resiliência / requisito não funcional no FDD
 - `FDD-INT-XX` — integração com o sistema existente (seção 11 do FDD)
+- `PRD-CTX-XX` / `PRD-OBJ-XX` — contexto de negócio / objetivo com métrica no PRD
+- `PRD-RF-XX` / `PRD-ESC-XX` — requisito funcional / item fora de escopo no PRD
+- `PRD-RISCO-XX` / `PRD-DEP-XX` / `PRD-TESTE-XX` — risco / dependência / teste e validação no PRD
 
 ## Tabela
 
@@ -110,9 +113,33 @@ Mapeia cada item registrado nos documentos do pacote à sua origem: `TRANSCRICAO
 | FDD-INT-08 | docs/FDD.md | Integração com código | Registro do módulo em `buildApiRouter`/`buildControllers` sob `/api/v1` | CODIGO | src/routes/index.ts |
 | FDD-INT-09 | docs/FDD.md | Integração com código | 4 modelos + 1 enum novos seguindo padrões do schema (UUID Char(36), @@map, índices) | CODIGO | prisma/schema.prisma |
 | FDD-INT-10 | docs/FDD.md | Integração com código | Schemas Zod do módulo aplicados via `validate()` (inclui recusa de URL http) | CODIGO | src/middlewares/validate.middleware.ts |
+| PRD-CTX-01 | docs/PRD.md | Contexto | Pedido formal de 3 clientes B2B: Atlas Comercial, MaxDistribuição e Nova Cargo | TRANSCRICAO | [09:00] Marcos |
+| PRD-CTX-02 | docs/PRD.md | Problema | Clientes fazem polling no `GET /orders`; integração lenta e cara | TRANSCRICAO | [09:00] Marcos |
+| PRD-CTX-03 | docs/PRD.md | Risco de negócio | Atlas pode migrar para concorrente se não entregue até o fim do trimestre | TRANSCRICAO | [09:00] Marcos |
+| PRD-OBJ-01 | docs/PRD.md | Objetivo/métrica | "Tempo real" = latência < 10s; latência mínima de 2s aceita | TRANSCRICAO | [09:02] Marcos |
+| PRD-OBJ-02 | docs/PRD.md | Objetivo/prazo | Entrega para fim de novembro; 3 sprints incluindo revisão de segurança | TRANSCRICAO | [09:45] Marcos |
+| PRD-RF-01 | docs/PRD.md | Requisito Funcional | Cadastro de webhook com URL + status; secret gerada e devolvida na criação | TRANSCRICAO | [09:31] Marcos |
+| PRD-RF-02 | docs/PRD.md | Requisito Funcional | PATCH editar, DELETE remover, GET listar webhooks de um customer | TRANSCRICAO | [09:33] Bruno |
+| PRD-RF-03 | docs/PRD.md | Requisito Funcional | Filtro de status por webhook, aplicado na inserção da outbox | TRANSCRICAO | [09:33] Marcos |
+| PRD-RF-04 | docs/PRD.md | Requisito Funcional | Notificação HTTP POST assinada em até 10s | TRANSCRICAO | [09:02] Marcos |
+| PRD-RF-05 | docs/PRD.md | Requisito Funcional | Retry automático com backoff e DLQ após 5 falhas | TRANSCRICAO | [09:17] Diego |
+| PRD-RF-06 | docs/PRD.md | Requisito Funcional | Histórico dos últimos 100 envios com sucesso/falha, payload, response, tempo | TRANSCRICAO | [09:34] Marcos |
+| PRD-RF-07 | docs/PRD.md | Requisito Funcional | Replay manual de DLQ por admin, auditado | TRANSCRICAO | [09:36] Sofia |
+| PRD-RF-08 | docs/PRD.md | Requisito Funcional | Rotação de secret via API com grace de 24h | TRANSCRICAO | [09:21] Sofia |
+| PRD-RF-09 | docs/PRD.md | Requisito Funcional | UUID único por evento (`X-Event-Id`) para dedup pelo cliente | TRANSCRICAO | [09:25] Diego |
+| PRD-ESC-01 | docs/PRD.md | Fora de escopo | Email de alerta de falha — adiado para próxima fase | TRANSCRICAO | [09:37] Larissa |
+| PRD-ESC-02 | docs/PRD.md | Fora de escopo | Dashboard visual — projeto separado do frontend | TRANSCRICAO | [09:40] Larissa |
+| PRD-ESC-03 | docs/PRD.md | Fora de escopo | Rate limiting de saída — observar e decidir depois | TRANSCRICAO | [09:39] Larissa |
+| PRD-RISCO-01 | docs/PRD.md | Risco | Prazo (fim de novembro) vs. churn da Atlas | TRANSCRICAO | [09:45] Marcos |
+| PRD-RISCO-02 | docs/PRD.md | Risco | Cliente sem dedup processa duplicatas (responsabilidade transferida) | TRANSCRICAO | [09:25] Sofia |
+| PRD-DEP-01 | docs/PRD.md | Dependência | Documentação de integração no portal do desenvolvedor (compromisso do PM) | TRANSCRICAO | [09:26] Marcos |
+| PRD-DEP-02 | docs/PRD.md | Dependência | Revisão de segurança de 2 dias úteis (HMAC e geração de secret) antes do deploy | TRANSCRICAO | [09:46] Sofia |
+| PRD-TESTE-01 | docs/PRD.md | Teste/validação | Meio sprint reservado para integração no order.service e testes ponta a ponta | TRANSCRICAO | [09:46] Larissa |
+| PRD-TESTE-02 | docs/PRD.md | Teste/validação | Sessão de revisão do design com Bruno e Diego antes de codar | TRANSCRICAO | [09:50] Larissa |
+| PRD-TESTE-03 | docs/PRD.md | Teste/validação | Novos testes seguem o padrão de integração existente (Vitest + Supertest contra MySQL real) | CODIGO | tests/orders.test.ts |
 
 ## Cobertura atual
 
-- **85 linhas** cobrindo os 7 ADRs, o RFC e o FDD (decisões, alternativas, fluxos, contratos, erros e referências de código)
-- Fonte `TRANSCRICAO`: 64 linhas (~75%) — todas com timestamp no formato `[hh:mm] Nome`
-- Fonte `CODIGO`: 21 linhas — todas com caminho de arquivo existente no repositório
+- **109 linhas** cobrindo os 7 ADRs, o RFC, o FDD e o PRD (decisões, alternativas, fluxos, contratos, erros, requisitos e referências de código)
+- Fonte `TRANSCRICAO`: 87 linhas (~80%) — todas com timestamp no formato `[hh:mm] Nome`
+- Fonte `CODIGO`: 22 linhas — todas com caminho de arquivo existente no repositório

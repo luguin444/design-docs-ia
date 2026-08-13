@@ -2,7 +2,7 @@
 
 > Este README documenta **o processo** de produção do pacote de design docs. O enunciado original do desafio foi preservado em [`docs/DESAFIO.md`](docs/DESAFIO.md).
 >
-> **Status:** em construção — atualizado incrementalmente a cada documento concluído. Concluído até aqui: contextualização + ADRs + RFC + FDD (etapas 1–5).
+> **Status:** todos os documentos do pacote produzidos (contextualização, ADRs, RFC, FDD e PRD — etapas 1–6). Falta a revisão final contra a checklist de critérios de aceite.
 
 ## Sobre o desafio
 
@@ -26,8 +26,9 @@ Segui a ordem sugerida no enunciado (ADRs → RFC → FDD → PRD), com um ajust
 3. **ADRs** (7, em [`docs/adrs/`](docs/adrs/)): gerados um a um a partir das decisões catalogadas na análise, em formato MADR, com revisão humana de cada arquivo (ver iterações abaixo).
 4. **Tracker + README** atualizados com o conteúdo da fase.
 5. **RFC** ([`docs/RFC.md`](docs/RFC.md)): proposta consolidada em altura de arquitetura — referencia os ADRs em vez de repetir o detalhe deles; alternativas descartadas e questões em aberto da reunião ganham suas seções naturais. Antes de escrever, releitura dos ADRs já revisados, para o RFC herdar a versão corrigida.
-6. **FDD** ([`docs/FDD.md`](docs/FDD.md)): o "como construir" — modelo de dados, fluxos (outbox → worker → retry → DLQ), 7 endpoints com payloads, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção de integração com 10 arquivos reais do código. Convenção adotada: o que a reunião não definiu está marcado como *(definido neste FDD)* — separando decisão da reunião de proposta de design, para a revisão humana saber onde olhar.
-7. *(Próximas fases: PRD → revisão final contra os critérios de aceite.)*
+6. **FDD** ([`docs/FDD.md`](docs/FDD.md)): o "como construir" — modelo de dados, fluxos (outbox → worker → retry → DLQ), 7 endpoints com payloads, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção de integração com 10 arquivos reais do código. Convenção adotada: o que a reunião não definiu está marcado como *(definido neste FDD)* — separando decisão da reunião de proposta de design, para a revisão humana saber onde olhar. Essa convenção guiou a rodada mais produtiva de revisão do processo (iterações 5 e 6 abaixo).
+7. **PRD** ([`docs/PRD.md`](docs/PRD.md)): produzido por último, como consolidação — problema, público, cenários, objetivos com métricas, escopo/fora de escopo, 9 RFs e 9 RNFs, riscos com probabilidade/impacto e estratégia de testes, tudo apontando para RFC/FDD/ADRs em vez de repetir.
+8. *(Próxima fase: revisão final contra os critérios de aceite.)*
 
 Interação com a IA: em vez de "gere os ADRs da transcrição", cada documento foi produzido com prompts dirigidos (abaixo), e cada dúvida de fidelidade foi resolvida voltando à transcrição — quando a IA registrava algo que a reunião não sustentava, o trecho era corrigido ou removido.
 
@@ -91,16 +92,17 @@ Registro dos principais momentos em que a saída da IA precisou de correção hu
 2. **Consequências sem lastro no ADR-006 (reuso de padrões).** A IA registrou dois trade-offs que a transcrição não sustentava: (a) "problema de performance no MySQL afeta API e worker juntos" — verdadeiro, mas consequência do outbox no MySQL (ADR-001), não do reuso de padrões: a alternativa descartada no ADR-006 não evitaria isso, então a consequência não era diferencial; (b) "polling sem framework de jobs" implicava que o time decidiu "fazer tudo à mão" — decisão que a reunião nunca tomou (o que existe é o descarte de Redis em [09:07] e o polling em [09:09]). Ambos corrigidos após questionamento, ficando só o que a transcrição sustenta ([09:29]: logging permanece Pino, "nada novo").
 3. **A IA "corrigiu" o que não precisava de correção.** Num double check da análise da transcrição, a IA propôs e aplicou 3 ajustes puramente cosméticos (suavizar "ameaça migrar", ampliar um range de timestamp, pontuação dentro de uma citação) — zero erro concreto. Os 3 foram revertidos e a regra virou prompt fixo de revisão (acima): só fato errado conta; "nada encontrado" é resposta válida. No double check seguinte (TRACKER.md, 45 linhas), a regra funcionou: verificação de timestamps, falantes, caminhos e contagens, zero achado inventado.
 4. **Fronteira "questão em aberto" × "adiado" no RFC.** Questionei a separação entre as 4 questões em aberto e os 2 itens de rodapé (email, dashboard) — por que só os últimos seriam "explicitamente adiados"? A revisão explicitou o critério: pergunta que ficou **sem resposta** na reunião é questão em aberto (ex.: rate limiting, que o próprio Diego pede para "registrar como ponto em aberto" em [09:39]); pedido que recebeu **"não" explícito** da tech lead é decisão de escopo fechada ([09:37] email, [09:40] dashboard) e pertence ao "Fora de escopo" do PRD. O RFC foi levemente editado após essa discussão.
+5. **Números sem lastro no FDD.** A primeira versão cravava valores que a reunião nunca definiu: batch do worker = 20 e threshold de recuperação de crash = 5 minutos, ambos sem justificativa. Questionados ("por que 20?", "de onde vêm os 5 minutos?"), viraram: batch configurável via env var (`WEBHOOK_WORKER_BATCH_SIZE`, default 20, ancorado no burst de 50 eventos/min citado em [09:38]) e threshold derivado dos números que a reunião *de fato* fixou (`batch × timeout de 10s + margem`), com a regra de acoplamento registrada para quem mudar um sem o outro.
+6. **Contrato inventado e complexidade especulativa no FDD.** Três achados da revisão humana dos contratos: (a) o erro `WEBHOOK_SECRET_REQUIRED` — citado na reunião só como exemplo de nomenclatura [09:28] — tinha ganhado semântica inventada para um estado impossível por construção (todo webhook nasce com secret); saiu do contrato público, com nota de rastreabilidade explicando o destino. (b) A listagem de webhooks tinha paginação especulativa (lista naturalmente pequena; paginar encareceria o contrato do integrador); removida. (c) O diagrama do fluxo transacional modelava a *transação* como participante de um sequence diagram; refeito como flowchart com a transação como fronteira (subgraph).
 
 ## Como navegar a entrega
 
-Ordem de leitura sugerida (estado atual):
+Ordem de leitura sugerida:
 
 1. [`docs/DESAFIO.md`](docs/DESAFIO.md) — enunciado original do desafio.
 2. [`docs/analise-transcricao.md`](docs/analise-transcricao.md) — documento de trabalho: o que a reunião decidiu, descartou e deixou em aberto (com timestamps).
-3. [`docs/RFC.md`](docs/RFC.md) — a proposta técnica: o que estamos propondo, o que foi descartado e o que segue em aberto.
-4. [`docs/adrs/README.md`](docs/adrs/README.md) — índice dos ADRs, e os 7 ADRs (`ADR-001` a `ADR-007`).
-5. [`docs/FDD.md`](docs/FDD.md) — como construir, em detalhe acionável (fluxos, contratos, erros, integração com o código).
-6. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
-
-Pendente (próxima fase): `docs/PRD.md`.
+3. [`docs/PRD.md`](docs/PRD.md) — o quê e por quê: problema, público, objetivos com métricas, escopo, requisitos e riscos.
+4. [`docs/RFC.md`](docs/RFC.md) — a proposta técnica: o que estamos propondo, o que foi descartado e o que segue em aberto.
+5. [`docs/adrs/README.md`](docs/adrs/README.md) — índice dos ADRs, e os 7 ADRs (`ADR-001` a `ADR-007`).
+6. [`docs/FDD.md`](docs/FDD.md) — como construir, em detalhe acionável (fluxos, contratos, erros, integração com o código).
+7. [`docs/TRACKER.md`](docs/TRACKER.md) — rastreabilidade de cada item à transcrição ou ao código.
